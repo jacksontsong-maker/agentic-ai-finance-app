@@ -111,3 +111,34 @@ else:
     # Raw data
     st.subheader("📄 Expense Data")
     st.dataframe(df)
+
+    # 🤖 AI CFO Chat
+    st.subheader("🤖 Ask Your AI CFO")
+
+    user_question = st.text_input("Ask anything about your finances")
+
+    if user_question:
+        # Prepare context
+        data_summary = df.groupby("category")["amount"].sum().to_dict()
+        total_spending = df["amount"].sum()
+
+        chat_prompt = f"""
+    You are a personal AI CFO.
+
+    User financial data:
+    Total spending: ${total_spending}
+    Category breakdown: {data_summary}
+
+    User question:
+    {user_question}
+
+    Give a clear, practical answer based ONLY on the data.
+    Be concise and helpful.
+    """
+
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[{"role": "user", "content": chat_prompt}]
+        )
+
+        st.write(response.choices[0].message.content)
