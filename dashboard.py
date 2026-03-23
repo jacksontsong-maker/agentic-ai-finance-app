@@ -112,33 +112,54 @@ else:
     st.subheader("📄 Expense Data")
     st.dataframe(df)
 
-    # 🤖 AI CFO Chat
+    # 🤖 AI CFO Chat (with memory)
     st.subheader("🤖 Ask Your AI CFO")
 
-    user_question = st.chat_input("Ask your AI CFO...")
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    if user_question:
-        # Prepare context
+    # Display chat history
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
+
+    # Chat input
+    user_input = st.chat_input("Ask your AI CFO...")
+
+    if user_input:
+        # Add user message
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        # Prepare financial context
         data_summary = df.groupby("category")["amount"].sum().to_dict()
         total_spending = df["amount"].sum()
 
-        chat_prompt = f"""
+        system_prompt = f"""
     You are a personal AI CFO.
 
     User financial data:
     Total spending: ${total_spending}
     Category breakdown: {data_summary}
 
-    User question:
-    {user_question}
-
-    Give a clear, practical answer based ONLY on the data.
-    Be concise and helpful.
+    You answer questions based on this data.
+    Be practical, concise, and helpful.
     """
 
+        # Build full conversation
+        messages = [{"role": "system", "content": system_prompt}] + st.session_state.messages
+
+        # Get AI response
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
-            messages=[{"role": "user", "content": chat_prompt}]
+            messages=messages
         )
 
-        st.write(response.choices[0].message.content)
+        reply = response.choices[0].message.content
+
+        # Save AI reply
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+        # Display AI reply
+        with st.chat_message("assistant"):
+            st.write(reply)
