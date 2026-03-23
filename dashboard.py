@@ -115,7 +115,7 @@ else:
     # 🤖 AI CFO Chat
     st.subheader("🤖 Ask Your AI CFO")
 
-    user_question = st.text_input("Ask anything about your finances")
+    user_question = st.chat_input("Ask your AI CFO...")
 
     if user_question:
         # Prepare context
