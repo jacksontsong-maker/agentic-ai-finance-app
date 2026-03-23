@@ -1,0 +1,78 @@
+import streamlit as st
+import sqlite3
+import pandas as pd
+from openai import OpenAI
+import os
+
+# Initialize OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Connect to DB
+conn = sqlite3.connect("expenses.db", check_same_thread=False)
+cursor = conn.cursor()
+
+# Create table if not exists (important for cloud)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS expenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount REAL,
+    category TEXT,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+conn.commit()
+
+st.title("💰 Personal Finance Dashboard")
+
+# Load data
+df = pd.read_sql_query("SELECT * FROM expenses", conn)
+
+if df.empty:
+    st.warning("No expenses recorded yet.")
+else:
+    # Total spending
+    total = df["amount"].sum()
+    st.metric("Total Spending", f"${total:.2f}")
+
+    # Category breakdown
+    st.subheader("📊 Spending by Category")
+    category_df = df.groupby("category")["amount"].sum()
+    st.bar_chart(category_df)
+
+    # Daily trend
+    st.subheader("📈 Daily Spending Trend")
+    df["date"] = pd.to_datetime(df["date"])
+    daily = df.groupby(df["date"].dt.date)["amount"].sum()
+    st.line_chart(daily)
+
+    # AI Insights
+    st.subheader("🧠 AI Insights")
+
+    data_summary = df.groupby("category")["amount"].sum().to_dict()
+
+    prompt = f"""
+You are a financial advisor.
+
+User spending:
+Total: ${total}
+Breakdown: {data_summary}
+
+Give:
+1. Key insight
+2. Any risk
+3. 1 actionable advice
+
+Keep it short.
+"""
+
+    if st.button("Generate Insights"):
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        st.write(response.choices[0].message.content)
+
+    # Raw data
+    st.subheader("📄 Expense Data")
+    st.dataframe(df)
