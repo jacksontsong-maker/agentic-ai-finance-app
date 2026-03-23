@@ -24,6 +24,21 @@ conn.commit()
 
 st.title("💰 Personal Finance Dashboard")
 
+# ➕ Add Expense Section
+st.subheader("➕ Add Expense")
+
+amount = st.number_input("Amount", min_value=0.0)
+category = st.selectbox("Category", ["food", "transport", "shopping", "bills", "other"])
+
+if st.button("Add Expense"):
+    cursor.execute(
+        "INSERT INTO expenses (amount, category) VALUES (?, ?)",
+        (amount, category)
+    )
+    conn.commit()
+    st.success("Expense added!")
+    st.rerun()
+
 # Load data
 df = pd.read_sql_query("SELECT * FROM expenses", conn)
 
@@ -38,6 +53,11 @@ else:
     st.subheader("📊 Spending by Category")
     category_df = df.groupby("category")["amount"].sum()
     st.bar_chart(category_df)
+
+    st.subheader("📊 Category Percentage")
+
+    percent_df = (category_df / total * 100).round(1)
+    st.write(percent_df)
 
     # Daily trend
     st.subheader("📈 Daily Spending Trend")
