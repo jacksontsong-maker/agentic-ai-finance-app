@@ -65,27 +65,42 @@ else:
     daily = df.groupby(df["date"].dt.date)["amount"].sum()
     st.line_chart(daily)
 
+    st.subheader("📊 Smart Insights")
+
+    # Highest spending category
+    top_category = category_df.idxmax()
+    top_value = category_df.max()
+
+    st.write(f"💸 Highest spending: {top_category} (${top_value:.2f})")
+
+    # Simple risk flag
+    if top_value / total > 0.5:
+        st.warning(f"⚠️ Over 50% of spending is on {top_category}")
+
     # AI Insights
     st.subheader("🧠 AI Insights")
 
     data_summary = df.groupby("category")["amount"].sum().to_dict()
 
     prompt = f"""
-You are a financial advisor.
+    You are an AI CFO helping a user manage personal finances.
 
-User spending:
-Total: ${total}
-Breakdown: {data_summary}
+    Here is the user's spending data:
+    Total spending: ${total}
+    Category breakdown: {data_summary}
 
-Give:
-1. Key insight
-2. Any risk
-3. 1 actionable advice
+    Analyze and provide:
 
-Keep it short.
-"""
+    1. Key insight (what stands out?)
+    2. Risk detection (any unhealthy spending patterns?)
+    3. Specific actionable advice (what should they do next?)
+    4. One cost-saving opportunity
+    5. Predict next month's spending trend (increase/decrease + reason)
 
-    if st.button("Generate Insights"):
+    Be concise, practical, and slightly critical like a real CFO.
+    """
+
+    if not df.empty:
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[{"role": "user", "content": prompt}]
