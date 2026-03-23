@@ -112,23 +112,27 @@ else:
     st.subheader("📄 Expense Data")
     st.dataframe(df)
 
-    # 🤖 AI CFO Chat (with memory)
+   # 🤖 AI CFO Chat (clean version)
     st.subheader("🤖 Ask Your AI CFO")
 
-    # Initialize chat history
+    # Initialize memory
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Display chat history
+    # Show chat history FIRST
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+            st.markdown(msg["content"])
 
-    # Chat input
+    # Chat input (at bottom)
     user_input = st.chat_input("Ask your AI CFO...")
 
     if user_input:
-        # Add user message
+        # Show user message immediately
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # Save user message
         st.session_state.messages.append({"role": "user", "content": user_input})
 
         # Prepare financial context
@@ -142,11 +146,9 @@ else:
     Total spending: ${total_spending}
     Category breakdown: {data_summary}
 
-    You answer questions based on this data.
-    Be practical, concise, and helpful.
+    Answer clearly, concisely, and practically.
     """
 
-        # Build full conversation
         messages = [{"role": "system", "content": system_prompt}] + st.session_state.messages
 
         # Get AI response
@@ -157,9 +159,9 @@ else:
 
         reply = response.choices[0].message.content
 
-        # Save AI reply
-        st.session_state.messages.append({"role": "assistant", "content": reply})
-
-        # Display AI reply
+        # Show AI message immediately
         with st.chat_message("assistant"):
-            st.write(reply)
+            st.markdown(reply)
+
+        # Save AI message
+        st.session_state.messages.append({"role": "assistant", "content": reply})
